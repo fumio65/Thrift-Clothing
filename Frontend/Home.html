@@ -996,7 +996,7 @@
     <header class="site-header">
         <div class="header-content">
             
-            <div class="brand">
+            <div class="brand" onclick="goToLanding()" style="cursor: pointer;">
                 <span class="brand-logo">🧵</span>
                 <span>Thrift Clothing</span>
             </div>
@@ -1570,7 +1570,7 @@
 
         function handleLogout() {
             if (confirm('Are you sure you want to logout?')) {
-                alert('You have been logged out. Redirecting to login page...');
+                window.location.href = 'LandingPage.html';
                 closeModals();
             }
         }
@@ -1644,6 +1644,10 @@
                 document.getElementById('dropdownMenu').classList.remove('active');
             }
         });
+
+        function goToLanding() {
+            window.location.href = 'LandinPage.html';
+        }
 
     </script>
 </body>
