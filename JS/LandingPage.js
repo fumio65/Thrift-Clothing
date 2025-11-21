@@ -1,6 +1,39 @@
 // API Configuration
 const API_BASE = 'http://localhost/thrift-clothing/api/';
 
+// ============= Alert Message Handler =============
+
+function showAlert(elementId, message, type = 'error') {
+    const alertElement = document.getElementById(elementId);
+    if (!alertElement) {
+        console.error(`Alert element with id '${elementId}' not found`);
+        return;
+    }
+
+    alertElement.textContent = message;
+    alertElement.className = `alert-message show ${type}`;
+
+    if (type === 'success') {
+        setTimeout(() => {
+            alertElement.classList.remove('show');
+        }, 4000);
+    }
+}
+
+function hideAlert(elementId) {
+    const alertElement = document.getElementById(elementId);
+    if (alertElement) {
+        alertElement.classList.remove('show');
+    }
+}
+
+function clearAlerts() {
+    const loginAlert = document.getElementById('loginAlert');
+    const signupAlert = document.getElementById('signupAlert');
+    if (loginAlert) loginAlert.classList.remove('show');
+    if (signupAlert) signupAlert.classList.remove('show');
+}
+
 // ============= Modal Functions =============
 
 function showLanding() {
@@ -9,16 +42,19 @@ function showLanding() {
 }
 
 function showLogin() {
+    clearAlerts();
     document.getElementById('loginModal').classList.add('active');
 }
 
 function showSignup() {
+    clearAlerts();
     document.getElementById('signupModal').classList.add('active');
 }
 
 function closeModals() {
     document.getElementById('loginModal').classList.remove('active');
     document.getElementById('signupModal').classList.remove('active');
+    clearAlerts();
 }
 
 function switchToLogin() {
@@ -44,28 +80,43 @@ function handleLogin(e) {
     const email = form.querySelector('input[type="email"]').value.trim();
     const password = form.querySelector('input[type="password"]').value;
     
-    // Validation
+    hideAlert('loginAlert');
+
     if (!email || !password) {
-        alert('Please fill in all fields');
+        showAlert('loginAlert', '⚠️ Please fill in all fields', 'error');
         return;
     }
-    
-    // Show loading state
+
+    // ========== NEWLY ADDED PASSWORD STRENGTH CHECK ==========
+    if (password.length < 8) {
+        showAlert('loginAlert', '⚠️ Password must be at least 8 characters long', 'error');
+        return;
+    }
+
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+        showAlert(
+            'loginAlert',
+            '⚠️ Password must contain uppercase, lowercase, numbers, and special characters (!@#$%^&*)',
+            'error'
+        );
+        return;
+    }
+    // ==========================================================
+
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
     submitBtn.textContent = 'Signing in...';
-    
-    // Send login request to backend
+
     fetch(`${API_BASE}auth.php?action=login`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
     })
     .then(response => response.json())
     .then(data => {
@@ -73,31 +124,27 @@ function handleLogin(e) {
         submitBtn.textContent = originalText;
         
         if (data.success) {
-            // Store token and user info
             localStorage.setItem('authToken', data.data.token);
             localStorage.setItem('userId', data.data.userId);
             localStorage.setItem('userName', `${data.data.firstName} ${data.data.lastName}`);
             localStorage.setItem('userEmail', data.data.email);
             
-            alert('Login successful! 🎉');
-            closeModals();
+            showAlert('loginAlert', '✅ Login successful! Redirecting...', 'success');
             
-            // Reset form
             form.reset();
             
-            // Redirect to shop after 1 second
             setTimeout(() => {
                 window.location.href = 'Home.html';
-            }, 1000);
+            }, 1500);
         } else {
-            alert('Login failed: ' + data.message);
+            showAlert('loginAlert', '❌ ' + (data.message || 'Login failed. Please try again.'), 'error');
         }
     })
     .catch(error => {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
         console.error('Login error:', error);
-        alert('Error: Unable to connect to server. Make sure XAMPP is running.');
+        showAlert('loginAlert', '❌ Unable to connect to server. Make sure XAMPP is running.', 'error');
     });
 }
 
@@ -109,53 +156,59 @@ function handleSignup(e) {
     const email = form.querySelector('input[type="email"]').value.trim();
     const password = form.querySelectorAll('input[type="password"]')[0].value;
     const confirmPassword = form.querySelectorAll('input[type="password"]')[1].value;
+    const agreeTerms = document.getElementById('agreeTerms').checked;
     
-    // Validation
+    hideAlert('signupAlert');
+
     if (!fullName || !email || !password || !confirmPassword) {
-        alert('Please fill in all fields');
+        showAlert('signupAlert', '⚠️ Please fill in all fields', 'error');
+        return;
+    }
+    
+    if (!agreeTerms) {
+        showAlert('signupAlert', '⚠️ Please agree to the Terms and Conditions', 'warning');
         return;
     }
     
     if (password.length < 8) {
-        alert('Password must be at least 8 characters long');
+        showAlert('signupAlert', '⚠️ Password must be at least 8 characters long', 'error');
+        return;
+    }
+
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+        showAlert('signupAlert', '⚠️ Password must contain uppercase, lowercase, numbers, and special characters (!@#$%^&*)', 'error');
         return;
     }
     
     if (password !== confirmPassword) {
-        alert('Passwords do not match');
+        showAlert('signupAlert', '⚠️ Passwords do not match', 'error');
         return;
     }
-    
-    // Validate email format
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        alert('Please enter a valid email address');
+        showAlert('signupAlert', '⚠️ Please enter a valid email address', 'error');
         return;
     }
-    
-    // Split full name
+
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ') || '';
-    
-    // Show loading state
+
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
     submitBtn.textContent = 'Creating account...';
-    
-    // Send signup request to backend
+
     fetch(`${API_BASE}auth.php?action=register`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
-            password: password
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, email, password })
     })
     .then(response => response.json())
     .then(data => {
@@ -163,29 +216,23 @@ function handleSignup(e) {
         submitBtn.textContent = originalText;
         
         if (data.success) {
-            alert('Account created successfully! 🎉\n\nPlease log in with your credentials.');
-            
-            // Reset form and close modal
+            showAlert('signupAlert', '✅ Account created successfully! Switching to login...', 'success');
             form.reset();
-            closeModals();
-            
-            // Switch to login after a short delay
-            setTimeout(() => showLogin(), 500);
+            setTimeout(() => switchToLogin(), 1500);
         } else {
-            alert('Signup failed: ' + data.message);
+            showAlert('signupAlert', '❌ ' + (data.message || 'Signup failed. Please try again.'), 'error');
         }
     })
     .catch(error => {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
         console.error('Signup error:', error);
-        alert('Error: Unable to connect to server. Make sure XAMPP is running.');
+        showAlert('signupAlert', '❌ Unable to connect to server. Make sure XAMPP is running.', 'error');
     });
 }
 
 // ============= Event Listeners =============
 
-// Close modals when clicking outside
 document.addEventListener('DOMContentLoaded', function() {
     const loginModal = document.getElementById('loginModal');
     const signupModal = document.getElementById('signupModal');
@@ -215,8 +262,10 @@ function logout() {
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
     
-    alert('Logged out successfully');
-    window.location.href = 'LandingPage.html';
+    showAlert('loginAlert', 'Logged out successfully', 'success');
+    setTimeout(() => {
+        window.location.href = 'LandingPage.html';
+    }, 1500);
 }
 
 function getUserInfo() {
