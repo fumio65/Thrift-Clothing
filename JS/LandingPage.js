@@ -276,3 +276,4 @@ function getUserInfo() {
         email: localStorage.getItem('userEmail')
     };
 }
+    
