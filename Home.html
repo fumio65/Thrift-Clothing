@@ -13,7 +13,6 @@
     <!-- Header -->
     <header class="site-header">
         <div class="header-content">
-            
             <div class="brand" onclick="goToLanding()" style="cursor: pointer;">
                 <span class="brand-logo">🧵</span>
                 <span>Thrift Clothing</span>
@@ -68,8 +67,6 @@
                         <p style="margin-top: 8px; font-size: 12px;">Member since January 2025</p>
                     </div>
                 </div>
-
-                <div id="alertProfile" class="alert"></div>
 
                 <form onsubmit="handleProfileSave(event)">
                     <div class="form-row">
@@ -126,8 +123,6 @@
                 <button class="close-btn" onclick="closeModals()">×</button>
             </div>
             <div class="modal-body">
-                <div id="alertPassword" class="alert"></div>
-
                 <form onsubmit="handleChangePassword(event)">
                     <div class="form-group">
                         <label>Current Password</label>
@@ -176,7 +171,23 @@
                 <button class="close-btn" onclick="closeModals()">×</button>
             </div>
             <div class="modal-body">
-                <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 0 0 12px;">Notifications</h3>
+                <!-- Theme Section -->
+                <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 0 0 12px;">Appearance</h3>
+                <div class="theme-toggle-section">
+                    <div class="theme-options">
+                        <div class="theme-option active" data-theme="dark" onclick="setTheme('dark')">
+                            <div class="theme-preview dark">🌙</div>
+                            <div class="theme-label">Dark Mode</div>
+                        </div>
+                        <div class="theme-option" data-theme="light" onclick="setTheme('light')">
+                            <div class="theme-preview light">☀️</div>
+                            <div class="theme-label">Light Mode</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 24px 0 12px;">Notifications</h3>
                 <div class="settings-list">
                     <div class="setting-item">
                         <div class="setting-info">
@@ -207,6 +218,7 @@
                     </div>
                 </div>
 
+                <!-- Privacy & Security Section -->
                 <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 24px 0 12px;">Privacy & Security</h3>
                 <div class="settings-list">
                     <div class="setting-item">
@@ -229,9 +241,10 @@
                     </div>
                 </div>
 
+                <!-- Account Section -->
                 <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 24px 0 12px;">Account</h3>
                 <div class="settings-list">
-                    <div class="setting-item" style="cursor: pointer;" onclick="alert('Feature coming soon!')">
+                    <div class="setting-item" style="cursor: pointer;" onclick="showToast('Coming Soon', 'This feature will be available soon', 'info', 3000)">
                         <div class="setting-info">
                             <h4>Download My Data</h4>
                             <p>Get a copy of all your account data</p>
