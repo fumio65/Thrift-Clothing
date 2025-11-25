@@ -57,11 +57,11 @@ Commits:
   - Delete account → Double danger dialogs → Success toast
 
 #### 4.1.2 Product Catalog ❌ UI ONLY (NOT FUNCTIONAL)
-- [x] Product listing grid with responsive design (UI only, static)
-- [x] Product categories UI (Men, Women, Kids, Accessories) - Not functional
-- [x] Price range filters UI - Not functional
-- [x] Condition filters UI (Like New, Good, Fair) - Not functional
-- [x] Brand filters UI - Not functional
+- [ ] Product listing grid with responsive design (UI only, static)
+- [ ] Product categories UI (Men, Women, Kids, Accessories) - Not functional
+- [ ] Price range filters UI - Not functional
+- [ ] Condition filters UI (Like New, Good, Fair) - Not functional
+- [ ] Brand filters UI - Not functional
 - [ ] **TODO**: Connect frontend to products API
 - [ ] **TODO**: Display real product images from database
 - [ ] **TODO**: Make filters functional (click to filter)

@@ -4,9 +4,12 @@ const API_BASE = 'http://localhost/thrift-clothing/api/';
 // ============= Initialize Page =============
 
 document.addEventListener('DOMContentLoaded', function() {
+    initializeNotificationSystem();
+    initializeTheme();
     checkUserAuthentication();
     loadUserProfile();
     initializeModalListeners();
+    initializeProductCatalog(); // NEW: Initialize product catalog
 });
 
 function checkUserAuthentication() {
@@ -24,8 +27,10 @@ let cart = {};
 function addToCart(name, price) {
     if (cart[name]) {
         cart[name].qty += 1;
+        showToast('Updated Cart', `Increased ${name} quantity`, 'info', 2000);
     } else {
         cart[name] = { price, qty: 1 };
+        showToast('Added to Cart', `${name} added successfully`, 'success', 2000);
     }
     updateCart();
 }
@@ -40,6 +45,7 @@ function updateQty(name, change) {
 
 function removeItem(name) {
     delete cart[name];
+    showToast('Item Removed', `${name} removed from cart`, 'info', 2000);
     updateCart();
 }
 
@@ -225,6 +231,9 @@ function handleProfileSave(e) {
         bio: inputs[6].value
     };
 
+    // Show loading toast
+    const loadingToast = showToast('Saving...', 'Updating your profile', 'info', 0);
+
     fetch(`${API_BASE}users.php?action=update-profile`, {
         method: 'POST',
         headers: {
@@ -235,17 +244,22 @@ function handleProfileSave(e) {
     })
     .then(res => res.json())
     .then(data => {
+        loadingToast.remove();
+        
         if (data.success) {
-            showAlert('alertProfile', 'Profile updated successfully!', 'success');
+            showToast('Success!', 'Profile updated successfully', 'success', 3000);
+            
             // Update localStorage
             localStorage.setItem('userName', `${profileData.firstName} ${profileData.lastName}`);
-            setTimeout(() => closeModals(), 2000);
+            
+            setTimeout(() => closeModals(), 1500);
         } else {
-            showAlert('alertProfile', 'Error: ' + data.message, 'error');
+            showToast('Error', data.message || 'Failed to update profile', 'error', 4000);
         }
     })
     .catch(error => {
-        showAlert('alertProfile', 'Failed to update profile', 'error');
+        loadingToast.remove();
+        showToast('Error', 'Failed to update profile. Please try again.', 'error', 4000);
         console.error('Error:', error);
     });
 }
@@ -263,14 +277,28 @@ function handleChangePassword(e) {
 
     // Validation
     if (newPassword !== confirmPassword) {
-        showAlert('alertPassword', 'New passwords do not match', 'error');
+        showToast('Password Mismatch', 'New passwords do not match', 'error', 3000);
         return;
     }
 
     if (newPassword.length < 8) {
-        showAlert('alertPassword', 'Password must be at least 8 characters', 'error');
+        showToast('Weak Password', 'Password must be at least 8 characters', 'error', 3000);
         return;
     }
+
+    // Password strength check
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumbers = /\d/.test(newPassword);
+    const hasSpecialChar = /[^a-zA-Z\d]/.test(newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+        showToast('Weak Password', 'Password must contain uppercase, lowercase, numbers, and special characters', 'error', 4000);
+        return;
+    }
+
+    // Show loading toast
+    const loadingToast = showToast('Updating...', 'Changing your password', 'info', 0);
 
     fetch(`${API_BASE}users.php?action=change-password`, {
         method: 'POST',
@@ -285,43 +313,81 @@ function handleChangePassword(e) {
     })
     .then(res => res.json())
     .then(data => {
+        loadingToast.remove();
+        
         if (data.success) {
-            showAlert('alertPassword', 'Password changed successfully! Please log in again.', 'success');
+            showToast('Password Changed', 'You will be logged out for security', 'success', 3000);
+            
             setTimeout(() => {
                 handleLogout();
             }, 2000);
         } else {
-            showAlert('alertPassword', 'Error: ' + data.message, 'error');
+            showToast('Error', data.message || 'Failed to change password', 'error', 4000);
         }
     })
     .catch(error => {
-        showAlert('alertPassword', 'Failed to change password', 'error');
+        loadingToast.remove();
+        showToast('Error', 'Failed to change password. Please try again.', 'error', 4000);
         console.error('Error:', error);
     });
 }
 
 function handleLogout() {
-    // Clear localStorage
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userPhone');
-    localStorage.removeItem('userCity');
-    localStorage.removeItem('userProvince');
-    localStorage.removeItem('userBio');
+    closeModals();
+    
+    showConfirmDialog({
+        title: 'Logout',
+        message: 'Are you sure you want to logout? You will need to login again to access your account.',
+        type: 'warning',
+        confirmText: 'Logout',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            // Clear localStorage
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userPhone');
+            localStorage.removeItem('userCity');
+            localStorage.removeItem('userProvince');
+            localStorage.removeItem('userBio');
 
-    alert('Logged out successfully');
-    window.location.href = 'LandingPage.html';
+            showToast('Logged Out', 'You have been successfully logged out', 'success', 2000);
+            
+            setTimeout(() => {
+                window.location.href = 'LandingPage.html';
+            }, 1500);
+        }
+    });
 }
 
 function handleDeleteAccount() {
-    if (confirm('Are you sure? This will permanently delete your account and all data. This action cannot be undone.')) {
-        if (confirm('This is irreversible. Type "DELETE" to confirm:\n\n(In a real app, you would type DELETE)')) {
-            alert('Account deleted successfully.');
-            handleLogout();
+    closeModals();
+    
+    showConfirmDialog({
+        title: 'Delete Account',
+        message: 'This will permanently delete your account and all associated data. This action cannot be undone. Are you absolutely sure?',
+        type: 'danger',
+        confirmText: 'Delete Account',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            // Show second confirmation
+            showConfirmDialog({
+                title: 'Final Confirmation',
+                message: 'This is your last chance. Your account and all data will be permanently deleted.',
+                type: 'danger',
+                confirmText: 'Yes, Delete Forever',
+                cancelText: 'Cancel',
+                onConfirm: () => {
+                    showToast('Account Deleted', 'Your account has been permanently deleted', 'success', 2000);
+                    
+                    setTimeout(() => {
+                        handleLogout();
+                    }, 1500);
+                }
+            });
         }
-    }
+    });
 }
 
 // ============= Helper Functions =============
@@ -554,212 +620,375 @@ function setTheme(theme) {
     showToast('Theme Updated', `Switched to ${theme} mode`, 'success', 2000);
 }
 
-// ============= UPDATED FUNCTIONS =============
 
-// Updated Logout Handler with Confirmation Dialog
-function handleLogout() {
-    closeModals();
+// ============= PRODUCT CATALOG SYSTEM =============
+
+// Product state
+let products = [];
+let filteredProducts = [];
+let currentFilters = {
+    category: 'all',
+    priceMin: 0,
+    priceMax: 10000,
+    condition: 'all',
+    brand: 'all',
+    sort: 'newest'
+};
+let currentPage = 0;
+const productsPerPage = 12;
+let totalProducts = 0;
+
+// Initialize product catalog
+function initializeProductCatalog() {
+    loadProducts();
+    initializeFilterListeners();
+}
+
+// Load products from API
+async function loadProducts(append = false) {
+    const productGrid = document.querySelector('.product-grid');
     
-    showConfirmDialog({
-        title: 'Logout',
-        message: 'Are you sure you want to logout? You will need to login again to access your account.',
-        type: 'warning',
-        confirmText: 'Logout',
-        cancelText: 'Cancel',
-        onConfirm: () => {
-            // Clear localStorage
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userPhone');
-            localStorage.removeItem('userCity');
-            localStorage.removeItem('userProvince');
-            localStorage.removeItem('userBio');
+    if (!productGrid) {
+        console.error('Product grid not found in DOM');
+        return;
+    }
+    
+    if (!append) {
+        productGrid.innerHTML = createSkeletonLoaders(12);
+    }
 
-            showToast('Logged Out', 'You have been successfully logged out', 'success', 2000);
-            
-            setTimeout(() => {
-                window.location.href = 'LandingPage.html';
-            }, 1500);
+    try {
+        const params = new URLSearchParams({
+            action: 'all',
+            limit: productsPerPage,
+            offset: currentPage * productsPerPage,
+            category: currentFilters.category,
+            sort: currentFilters.sort
+        });
+
+        const response = await fetch(`${API_BASE}products.php?${params}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const newProducts = data.data.products;
+            totalProducts = data.data.total;
+
+            if (append) {
+                products = [...products, ...newProducts];
+            } else {
+                products = newProducts;
+            }
+
+            // Apply client-side filters (price, condition, brand)
+            applyFilters();
+            renderProducts();
+            updateLoadMoreButton();
+        } else {
+            throw new Error(data.message);
         }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        productGrid.innerHTML = createErrorState();
+        showToast('Error', 'Failed to load products. Please refresh.', 'error', 4000);
+    }
+}
+
+// Apply client-side filters
+function applyFilters() {
+    filteredProducts = products.filter(product => {
+        // Price filter
+        if (product.price < currentFilters.priceMin || product.price > currentFilters.priceMax) {
+            return false;
+        }
+
+        // Condition filter
+        if (currentFilters.condition !== 'all' && product.condition.toLowerCase() !== currentFilters.condition.toLowerCase()) {
+            return false;
+        }
+
+        // Brand filter (if brand exists)
+        if (currentFilters.brand !== 'all' && product.brand && product.brand.toLowerCase() !== currentFilters.brand.toLowerCase()) {
+            return false;
+        }
+
+        return true;
     });
 }
 
-// Updated Delete Account Handler with Confirmation Dialog
-function handleDeleteAccount() {
-    closeModals();
-    
-    showConfirmDialog({
-        title: 'Delete Account',
-        message: 'This will permanently delete your account and all associated data. This action cannot be undone. Are you absolutely sure?',
-        type: 'danger',
-        confirmText: 'Delete Account',
-        cancelText: 'Cancel',
-        onConfirm: () => {
-            // Show second confirmation
-            showConfirmDialog({
-                title: 'Final Confirmation',
-                message: 'This is your last chance. Your account and all data will be permanently deleted.',
-                type: 'danger',
-                confirmText: 'Yes, Delete Forever',
-                cancelText: 'Cancel',
-                onConfirm: () => {
-                    showToast('Account Deleted', 'Your account has been permanently deleted', 'success', 2000);
-                    
-                    setTimeout(() => {
-                        handleLogout();
-                    }, 1500);
+// Render products to DOM
+function renderProducts() {
+    const productGrid = document.querySelector('.product-grid');
+
+    if (filteredProducts.length === 0) {
+        productGrid.innerHTML = createEmptyState();
+        return;
+    }
+
+    productGrid.innerHTML = filteredProducts.map(product => createProductCard(product)).join('');
+}
+
+// Create product card HTML
+function createProductCard(product) {
+    const imageUrl = product.image_url || 'https://via.placeholder.com/300x400?text=No+Image';
+    const formattedPrice = parseFloat(product.price).toLocaleString();
+    const stockStatus = product.stock > 0 ? 'In Stock' : 'Out of Stock';
+    const stockClass = product.stock > 0 ? 'in-stock' : 'out-of-stock';
+
+    return `
+        <div class="product-card" data-product-id="${product.id}">
+            <div class="product-image-container">
+                <img src="${imageUrl}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
+                <div class="product-badge">${product.condition}</div>
+                ${product.stock <= 5 && product.stock > 0 ? '<div class="product-badge low-stock">Low Stock</div>' : ''}
+            </div>
+            <div class="product-info">
+                <div class="product-category">${product.category}</div>
+                <h3 class="product-name">${product.name}</h3>
+                ${product.brand ? `<div class="product-brand">${product.brand}</div>` : ''}
+                <p class="product-description">${truncateText(product.description, 80)}</p>
+                <div class="product-footer">
+                    <span class="product-price">₱${formattedPrice}</span>
+                    <span class="product-stock ${stockClass}">${stockStatus}</span>
+                </div>
+                ${product.stock > 0 ? 
+                    `<button class="add-to-cart-btn" onclick="addToCartFromProduct(${product.id}, '${product.name}', ${product.price})">
+                        <span>Add to Cart</span>
+                        <span class="cart-icon">🛒</span>
+                    </button>` : 
+                    `<button class="add-to-cart-btn disabled" disabled>Out of Stock</button>`
                 }
+            </div>
+        </div>
+    `;
+}
+
+// Add to cart from product card
+function addToCartFromProduct(productId, name, price) {
+    addToCart(name, price);
+}
+
+// Truncate text helper
+function truncateText(text, maxLength) {
+    if (!text) return 'No description available';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+// Create skeleton loaders
+function createSkeletonLoaders(count) {
+    return Array(count).fill().map(() => `
+        <div class="product-card skeleton">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-content">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line medium"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Create empty state
+function createEmptyState() {
+    return `
+        <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>No Products Found</h3>
+            <p>Try adjusting your filters or search criteria</p>
+            <button class="clear-filters-btn" onclick="clearAllFilters()">Clear All Filters</button>
+        </div>
+    `;
+}
+
+// Create error state
+function createErrorState() {
+    return `
+        <div class="empty-state error">
+            <div class="empty-icon">⚠️</div>
+            <h3>Failed to Load Products</h3>
+            <p>Something went wrong. Please try again.</p>
+            <button class="retry-btn" onclick="loadProducts()">Retry</button>
+        </div>
+    `;
+}
+
+// ============= FILTER SYSTEM =============
+
+function initializeFilterListeners() {
+    // Category filter
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            
+            currentFilters.category = item.dataset.category || 'all';
+            currentPage = 0;
+            loadProducts();
+            
+            showToast('Filter Applied', `Showing ${item.textContent.trim()} products`, 'info', 2000);
+        });
+    });
+
+    // Price range filter
+    const priceMin = document.querySelector('.price-min');
+    const priceMax = document.querySelector('.price-max');
+    
+    if (priceMin && priceMax) {
+        const applyPriceFilter = () => {
+            currentFilters.priceMin = parseFloat(priceMin.value) || 0;
+            currentFilters.priceMax = parseFloat(priceMax.value) || 10000;
+            applyFilters();
+            renderProducts();
+            showToast('Price Filter', `₱${currentFilters.priceMin} - ₱${currentFilters.priceMax}`, 'info', 2000);
+        };
+
+        priceMin.addEventListener('change', applyPriceFilter);
+        priceMax.addEventListener('change', applyPriceFilter);
+    }
+
+    // Condition filter
+    document.querySelectorAll('.filter-checkbox[data-filter="condition"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            // Uncheck other condition checkboxes
+            document.querySelectorAll('.filter-checkbox[data-filter="condition"]').forEach(cb => {
+                if (cb !== checkbox) cb.checked = false;
             });
-        }
+
+            currentFilters.condition = checkbox.checked ? checkbox.dataset.value : 'all';
+            applyFilters();
+            renderProducts();
+            
+            if (checkbox.checked) {
+                showToast('Condition Filter', `Showing ${checkbox.dataset.value} items`, 'info', 2000);
+            }
+        });
     });
+
+    // Brand filter
+    document.querySelectorAll('.filter-checkbox[data-filter="brand"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            // Uncheck other brand checkboxes
+            document.querySelectorAll('.filter-checkbox[data-filter="brand"]').forEach(cb => {
+                if (cb !== checkbox) cb.checked = false;
+            });
+
+            currentFilters.brand = checkbox.checked ? checkbox.dataset.value : 'all';
+            applyFilters();
+            renderProducts();
+            
+            if (checkbox.checked) {
+                showToast('Brand Filter', `Showing ${checkbox.dataset.value} products`, 'info', 2000);
+            }
+        });
+    });
+
+    // Sort dropdown
+    const sortSelect = document.querySelector('.sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentFilters.sort = e.target.value;
+            currentPage = 0;
+            loadProducts();
+            
+            const sortLabels = {
+                'newest': 'Newest First',
+                'price_low': 'Price: Low to High',
+                'price_high': 'Price: High to Low',
+                'best_sellers': 'Best Sellers'
+            };
+            
+            showToast('Sorted', sortLabels[e.target.value], 'info', 2000);
+        });
+    }
+
+    // Search functionality
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchProducts(e.target.value);
+            }, 500); // Debounce 500ms
+        });
+    }
 }
 
-// Updated Profile Save Handler with Toast
-function handleProfileSave(e) {
-    e.preventDefault();
+// Search products
+function searchProducts(query) {
+    if (!query || query.trim() === '') {
+        applyFilters();
+        renderProducts();
+        return;
+    }
 
-    const token = localStorage.getItem('authToken');
-    const form = e.target;
-    const inputs = form.querySelectorAll('input, textarea');
+    const searchTerm = query.toLowerCase();
+    filteredProducts = products.filter(product => {
+        return product.name.toLowerCase().includes(searchTerm) ||
+               (product.description && product.description.toLowerCase().includes(searchTerm)) ||
+               (product.brand && product.brand.toLowerCase().includes(searchTerm));
+    });
 
-    const profileData = {
-        firstName: inputs[0].value,
-        lastName: inputs[1].value,
-        phone: inputs[3].value,
-        city: inputs[4].value,
-        province: inputs[5].value,
-        bio: inputs[6].value
+    renderProducts();
+    showToast('Search', `Found ${filteredProducts.length} product(s)`, 'info', 2000);
+}
+
+// Clear all filters
+function clearAllFilters() {
+    // Reset filters
+    currentFilters = {
+        category: 'all',
+        priceMin: 0,
+        priceMax: 10000,
+        condition: 'all',
+        brand: 'all',
+        sort: 'newest'
     };
+    currentPage = 0;
 
-    // Show loading toast
-    const loadingToast = showToast('Saving...', 'Updating your profile', 'info', 0);
-
-    fetch(`${API_BASE}users.php?action=update-profile`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(profileData)
-    })
-    .then(res => res.json())
-    .then(data => {
-        loadingToast.remove();
-        
-        if (data.success) {
-            showToast('Success!', 'Profile updated successfully', 'success', 3000);
-            
-            // Update localStorage
-            localStorage.setItem('userName', `${profileData.firstName} ${profileData.lastName}`);
-            
-            setTimeout(() => closeModals(), 1500);
-        } else {
-            showToast('Error', data.message || 'Failed to update profile', 'error', 4000);
+    // Reset UI
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.category === 'all') {
+            item.classList.add('active');
         }
-    })
-    .catch(error => {
-        loadingToast.remove();
-        showToast('Error', 'Failed to update profile. Please try again.', 'error', 4000);
-        console.error('Error:', error);
     });
+
+    document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+    
+    const priceMin = document.querySelector('.price-min');
+    const priceMax = document.querySelector('.price-max');
+    if (priceMin) priceMin.value = 0;
+    if (priceMax) priceMax.value = 10000;
+
+    const sortSelect = document.querySelector('.sort-select');
+    if (sortSelect) sortSelect.value = 'newest';
+
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) searchInput.value = '';
+
+    loadProducts();
+    showToast('Filters Cleared', 'Showing all products', 'success', 2000);
 }
 
-// Updated Change Password Handler with Toast
-function handleChangePassword(e) {
-    e.preventDefault();
+// ============= PAGINATION =============
 
-    const token = localStorage.getItem('authToken');
-    const form = e.target;
-    const inputs = form.querySelectorAll('input[type="password"]');
+function updateLoadMoreButton() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (!loadMoreBtn) return;
 
-    const currentPassword = inputs[0].value;
-    const newPassword = inputs[1].value;
-    const confirmPassword = inputs[2].value;
-
-    // Validation
-    if (newPassword !== confirmPassword) {
-        showToast('Password Mismatch', 'New passwords do not match', 'error', 3000);
-        return;
-    }
-
-    if (newPassword.length < 8) {
-        showToast('Weak Password', 'Password must be at least 8 characters', 'error', 3000);
-        return;
-    }
-
-    // Password strength check
-    const hasUpperCase = /[A-Z]/.test(newPassword);
-    const hasLowerCase = /[a-z]/.test(newPassword);
-    const hasNumbers = /\d/.test(newPassword);
-    const hasSpecialChar = /[^a-zA-Z\d]/.test(newPassword);
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-        showToast('Weak Password', 'Password must contain uppercase, lowercase, numbers, and special characters', 'error', 4000);
-        return;
-    }
-
-    // Show loading toast
-    const loadingToast = showToast('Updating...', 'Changing your password', 'info', 0);
-
-    fetch(`${API_BASE}users.php?action=change-password`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            currentPassword: currentPassword,
-            newPassword: newPassword
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        loadingToast.remove();
-        
-        if (data.success) {
-            showToast('Password Changed', 'You will be logged out for security', 'success', 3000);
-            
-            setTimeout(() => {
-                handleLogout();
-            }, 2000);
-        } else {
-            showToast('Error', data.message || 'Failed to change password', 'error', 4000);
-        }
-    })
-    .catch(error => {
-        loadingToast.remove();
-        showToast('Error', 'Failed to change password. Please try again.', 'error', 4000);
-        console.error('Error:', error);
-    });
-}
-
-// Add to Cart with Toast
-function addToCart(name, price) {
-    if (cart[name]) {
-        cart[name].qty += 1;
-        showToast('Updated Cart', `Increased ${name} quantity`, 'info', 2000);
+    const loadedCount = (currentPage + 1) * productsPerPage;
+    
+    if (loadedCount >= totalProducts) {
+        loadMoreBtn.style.display = 'none';
     } else {
-        cart[name] = { price, qty: 1 };
-        showToast('Added to Cart', `${name} added successfully`, 'success', 2000);
+        loadMoreBtn.style.display = 'block';
+        loadMoreBtn.textContent = `Load More (${loadedCount} of ${totalProducts})`;
     }
-    updateCart();
 }
 
-// Remove from Cart with Toast
-function removeItem(name) {
-    delete cart[name];
-    showToast('Item Removed', `${name} removed from cart`, 'info', 2000);
-    updateCart();
+function loadMoreProducts() {
+    currentPage++;
+    loadProducts(true);
 }
-
-// ============= INITIALIZE ON PAGE LOAD =============
-
-document.addEventListener('DOMContentLoaded', function() {
-    initializeNotificationSystem();
-    initializeTheme();
-    checkUserAuthentication();
-    loadUserProfile();
-    initializeModalListeners();
-});
