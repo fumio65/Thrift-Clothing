@@ -18,7 +18,7 @@
                 <span>Thrift Clothing</span>
             </div>
             <div class="search-bar">
-                <input type="text" placeholder="Search items, brands...">
+                <input type="text" class="search-input" placeholder="Search items, brands...">
                 <button>🔍</button>
             </div>
             <div class="header-actions">
@@ -269,38 +269,63 @@
 
     <!-- Main Container -->
     <div class="container">
-        <!-- Sidebar -->
+        <!-- Sidebar Filters -->
         <aside class="sidebar">
             <div class="sidebar-section">
                 <h3>Categories</h3>
-                <a class="sidebar-link active">All Items</a>
-                <a class="sidebar-link">Men</a>
-                <a class="sidebar-link">Women</a>
-                <a class="sidebar-link">Kids</a>
-                <a class="sidebar-link">Accessories</a>
+                <a class="sidebar-link category-item active" data-category="all">All Items</a>
+                <a class="sidebar-link category-item" data-category="Men">Men's Clothing</a>
+                <a class="sidebar-link category-item" data-category="Women">Women's Clothing</a>
+                <a class="sidebar-link category-item" data-category="Kids">Kids' Clothing</a>
+                <a class="sidebar-link category-item" data-category="Accessories">Accessories</a>
             </div>
 
             <div class="sidebar-section">
                 <h3>Price Range</h3>
-                <a class="sidebar-link">Under ₱100</a>
-                <a class="sidebar-link">₱100 - ₱300</a>
-                <a class="sidebar-link">₱300 - ₱500</a>
-                <a class="sidebar-link">Above ₱500</a>
+                <div style="padding: 12px 0;">
+                    <input type="number" class="price-min" placeholder="Min (₱)" min="0" value="0" style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text);">
+                    <input type="number" class="price-max" placeholder="Max (₱)" min="0" value="10000" style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text);">
+                </div>
             </div>
 
             <div class="sidebar-section">
                 <h3>Condition</h3>
-                <a class="sidebar-link">Like New</a>
-                <a class="sidebar-link">Good</a>
-                <a class="sidebar-link">Fair</a>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="condition" data-value="like new" style="margin-right: 10px;">
+                    <span>Like New</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="condition" data-value="good" style="margin-right: 10px;">
+                    <span>Good</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="condition" data-value="fair" style="margin-right: 10px;">
+                    <span>Fair</span>
+                </label>
             </div>
 
             <div class="sidebar-section">
                 <h3>Brands</h3>
-                <a class="sidebar-link">Levi's</a>
-                <a class="sidebar-link">Nike</a>
-                <a class="sidebar-link">Adidas</a>
-                <a class="sidebar-link">H&M</a>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="brand" data-value="Nike" style="margin-right: 10px;">
+                    <span>Nike</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="brand" data-value="Adidas" style="margin-right: 10px;">
+                    <span>Adidas</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="brand" data-value="Zara" style="margin-right: 10px;">
+                    <span>Zara</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="brand" data-value="H&M" style="margin-right: 10px;">
+                    <span>H&M</span>
+                </label>
+                <label class="filter-option" style="display: flex; align-items: center; padding: 8px 0; cursor: pointer;">
+                    <input type="checkbox" class="filter-checkbox" data-filter="brand" data-value="Uniqlo" style="margin-right: 10px;">
+                    <span>Uniqlo</span>
+                </label>
             </div>
         </aside>
 
@@ -309,176 +334,32 @@
             <div class="products-header">
                 <h2>Products</h2>
                 <select class="sort-select">
-                    <option>Newest</option>
-                    <option>Price: Low to High</option>
-                    <option>Price: High to Low</option>
-                    <option>Best Sellers</option>
+                    <option value="newest">Newest First</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                    <option value="best_sellers">Best Sellers</option>
                 </select>
             </div>
 
+            <!-- Products Grid (Dynamic - will be populated by JavaScript) -->
             <div class="products-grid">
-                <!-- Product 1 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #d4a574 0%, #b37a45 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Classic Cotton Tee</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱150</span>
-                            <span class="product-stock">9 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Classic Cotton Tee', 150)">Add</button>
-                    </div>
-                </div>
+                <!-- Products will be loaded here dynamically -->
+            </div>
 
-                <!-- Product 2 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #8b7355 0%, #5a4a3a 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Slim Denim Jeans</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱250</span>
-                            <span class="product-stock">5 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Slim Denim Jeans', 250)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 3 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Breezy Summer Dress</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱100</span>
-                            <span class="product-stock">12 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Breezy Summer Dress', 100)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 4 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #6b5b4a 0%, #3d2f22 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Vintage Denim Jacket</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱320</span>
-                            <span class="product-stock">3 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Vintage Denim Jacket', 320)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 5 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Polo Shirt</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱180</span>
-                            <span class="product-stock">7 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Polo Shirt', 180)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 6 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Casual Blazer</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱450</span>
-                            <span class="product-stock">2 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Casual Blazer', 450)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 7 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Cargo Pants</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱280</span>
-                            <span class="product-stock">6 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Cargo Pants', 280)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 8 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Hoodie</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱350</span>
-                            <span class="product-stock">4 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Hoodie', 350)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 9 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Athletic Shorts</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱120</span>
-                            <span class="product-stock">11 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Athletic Shorts', 120)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 10 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Sweater</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱220</span>
-                            <span class="product-stock">8 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Sweater', 220)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 11 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Bomber Jacket</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱380</span>
-                            <span class="product-stock">1 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Bomber Jacket', 380)">Add</button>
-                    </div>
-                </div>
-
-                <!-- Product 12 -->
-                <div class="product-card">
-                    <div class="product-image" style="background: linear-gradient(135deg, #d4a574 0%, #b37a45 100%);"></div>
-                    <div class="product-details">
-                        <h3 class="product-title">Flannel Shirt</h3>
-                        <div class="product-footer">
-                            <span class="product-price">₱200</span>
-                            <span class="product-stock">10 left</span>
-                        </div>
-                        <button class="add-btn" onclick="addToCart('Flannel Shirt', 200)">Add</button>
-                    </div>
-                </div>
+            <!-- Load More Button -->
+            <div style="text-align: center; padding: 40px 20px;">
+                <button id="loadMoreBtn" onclick="loadMoreProducts()" style="padding: 14px 32px; background: var(--primary); color: white; border: 2px solid var(--primary); border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
+                    Load More
+                </button>
             </div>
         </div>
 
         <!-- Cart Sidebar -->
         <aside class="cart-sidebar">
             <div class="cart-header">Order Bill</div>
-            <div class="cart-items" id="cartItems"></div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be added here dynamically -->
+            </div>
             <div class="cart-summary">
                 <div class="summary-row">
                     <span>Subtotal:</span>
@@ -494,8 +375,8 @@
                 </div>
             </div>
             <div class="cart-actions">
-                <button class="btn btn-secondary">Clear</button>
-                <button class="btn btn-primary">Checkout</button>
+                <button class="btn btn-secondary" onclick="showToast('Coming Soon', 'Clear cart feature coming soon', 'info', 2000)">Clear</button>
+                <button class="btn btn-primary" onclick="showToast('Coming Soon', 'Checkout feature coming soon', 'info', 2000)">Checkout</button>
             </div>
         </aside>
     </div>
