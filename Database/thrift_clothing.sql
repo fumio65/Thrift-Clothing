@@ -20,7 +20,7 @@ CREATE TABLE products (
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50) NOT NULL,
-    condition VARCHAR(20) NOT NULL,
+    conditions VARCHAR(20) NOT NULL,
     stock INT DEFAULT 0,
     brand VARCHAR(100),
     image_url VARCHAR(255),
@@ -64,7 +64,7 @@ CREATE TABLE cart (
 );
 
 -- Insert Sample Products
-INSERT INTO products (name, description, price, category, condition, stock, brand) VALUES
+INSERT INTO products (name, description, price, category, conditions, stock, brand) VALUES
 ('Classic Cotton Tee', 'Comfortable classic cotton t-shirt', 150, 'Men', 'Good', 9, 'Generic'),
 ('Slim Denim Jeans', 'Stylish slim fit denim jeans', 250, 'Men', 'Like New', 5, 'Levis'),
 ('Breezy Summer Dress', 'Light and airy summer dress', 100, 'Women', 'Good', 12, 'H&M'),

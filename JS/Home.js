@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE = 'http://localhost/thrift-clothing/api/';
+const API_BASE = 'http://localhost/Thrift-Clothing/api/';
 
 // ============= Initialize Page =============
 
@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     checkUserAuthentication();
     loadUserProfile();
     initializeModalListeners();
-    initializeProductCatalog(); // NEW: Initialize product catalog
+    initializeProductCatalog();
+    initializeCart(); // ADD THIS LINE
 });
 
 function checkUserAuthentication() {
@@ -33,27 +34,78 @@ function addToCart(name, price) {
         showToast('Added to Cart', `${name} added successfully`, 'success', 2000);
     }
     updateCart();
+    saveCart(); // ADD THIS LINE
 }
 
 function updateQty(name, change) {
+    if (!cart[name]) return; // ADD THIS LINE
+    
     cart[name].qty += change;
     if (cart[name].qty <= 0) {
-        delete cart[name];
+        removeItem(name); // CHANGED: call removeItem instead of delete
+    } else {
+        updateCart();
+        saveCart(); // ADD THIS LINE
     }
-    updateCart();
 }
 
 function removeItem(name) {
-    delete cart[name];
-    showToast('Item Removed', `${name} removed from cart`, 'info', 2000);
-    updateCart();
+    showConfirmDialog({
+        title: 'Remove Item',
+        message: `Are you sure you want to remove "${name}" from your cart?`,
+        type: 'warning',
+        confirmText: 'Remove',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            delete cart[name];
+            showToast('Item Removed', `${name} removed from cart`, 'info', 2000);
+            updateCart();
+            saveCart(); // ADD THIS LINE
+        }
+    });
 }
 
 function updateCart() {
     const cartItems = document.getElementById('cartItems');
-    cartItems.innerHTML = '';
+    const cartCount = document.querySelector('.cart-count');
+    
+    if (!cartItems) return;
+    
+    // Calculate total items
+    const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+    
+    // Update cart count badge
+    if (cartCount) {
+        cartCount.textContent = totalItems;
+        cartCount.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+    
+    // Update cart header text
+    const cartHeader = document.querySelector('.cart-header h2');
+    if (cartHeader) {
+        cartHeader.textContent = `Order Bill (${totalItems})`;
+    }
 
+    // If cart is empty, show empty state
+    if (totalItems === 0) {
+        cartItems.innerHTML = `
+            <div class="empty-cart-state">
+                <div class="empty-cart-icon">🛒</div>
+                <h3>Your cart is empty</h3>
+                <p>Add some items to get started!</p>
+            </div>
+        `;
+        
+        document.getElementById('subtotal').textContent = '₱0';
+        document.getElementById('tax').textContent = '₱0';
+        document.getElementById('total').textContent = '₱0';
+        return;
+    }
+
+    // Render cart items
+    cartItems.innerHTML = '';
     let subtotal = 0;
+    
     Object.entries(cart).forEach(([name, { price, qty }]) => {
         const itemTotal = price * qty;
         subtotal += itemTotal;
@@ -62,14 +114,14 @@ function updateCart() {
         item.className = 'cart-item';
         item.innerHTML = `
             <div class="cart-item-header">
-                <span>${name}</span>
-                <span class="cart-item-price">₱${(price * qty).toLocaleString()}</span>
+                <span class="cart-item-name">${escapeHtml(name)}</span>
+                <span class="cart-item-price">₱${itemTotal.toLocaleString()}</span>
             </div>
             <div class="cart-item-qty">
-                <button class="qty-btn" onclick="updateQty('${name}', -1)">−</button>
+                <button class="qty-btn" onclick="updateQty('${escapeHtml(name)}', -1)">−</button>
                 <div class="qty-display">${qty}</div>
-                <button class="qty-btn" onclick="updateQty('${name}', 1)">+</button>
-                <button class="remove-btn" onclick="removeItem('${name}')">✕</button>
+                <button class="qty-btn" onclick="updateQty('${escapeHtml(name)}', 1)">+</button>
+                <button class="remove-btn" onclick="removeItem('${escapeHtml(name)}')">✕</button>
             </div>
         `;
         cartItems.appendChild(item);
@@ -646,7 +698,7 @@ function initializeProductCatalog() {
 
 // Load products from API
 async function loadProducts(append = false) {
-    const productGrid = document.querySelector('.product-grid');
+    const productGrid = document.querySelector('.products-grid');
     
     if (!productGrid) {
         console.error('Product grid not found in DOM');
@@ -717,7 +769,7 @@ function applyFilters() {
 
 // Render products to DOM
 function renderProducts() {
-    const productGrid = document.querySelector('.product-grid');
+    const productGrid = document.querySelector('.products-grid');
 
     if (filteredProducts.length === 0) {
         productGrid.innerHTML = createEmptyState();
@@ -728,22 +780,51 @@ function renderProducts() {
 }
 
 // Create product card HTML
+// Create product card HTML
 function createProductCard(product) {
-    const imageUrl = product.image_url || 'https://via.placeholder.com/300x400?text=No+Image';
+    // Check if image_url exists and is valid
+    let imageUrl = '';
+    
+    // Only use product.image_url if it exists and doesn't contain placeholder URLs
+    if (product.image_url && 
+        !product.image_url.includes('placeholder') && 
+        !product.image_url.includes('placehold') &&
+        product.image_url.trim() !== '') {
+        imageUrl = product.image_url;
+    }
+    
     const formattedPrice = parseFloat(product.price).toLocaleString();
     const stockStatus = product.stock > 0 ? 'In Stock' : 'Out of Stock';
     const stockClass = product.stock > 0 ? 'in-stock' : 'out-of-stock';
+    const condition = product.condition || product.conditions || 'Good';
+    
+    // Escape product name for use in onclick
+    const safeName = escapeHtml(product.name);
+    const safeNameForJs = product.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
+    // Determine if we should show image or placeholder
+    const hasImage = imageUrl !== '';
+    
     return `
         <div class="product-card" data-product-id="${product.id}">
-            <div class="product-image-container">
-                <img src="${imageUrl}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
-                <div class="product-badge">${product.condition}</div>
+            <div class="product-image-container ${!hasImage ? 'no-image' : ''}">
+                ${hasImage ? 
+                    `<img src="${imageUrl}" 
+                         alt="${safeName}" 
+                         class="product-image" 
+                         onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` 
+                    : 
+                    `<div class="image-placeholder">
+                        <div class="placeholder-icon">🖼️</div>
+                        <div class="placeholder-text">No Image</div>
+                    </div>`
+                }
+                <div class="product-badge">${condition}</div>
                 ${product.stock <= 5 && product.stock > 0 ? '<div class="product-badge low-stock">Low Stock</div>' : ''}
             </div>
             <div class="product-info">
                 <div class="product-category">${product.category}</div>
-                <h3 class="product-name">${product.name}</h3>
+                <h3 class="product-name">${safeName}</h3>
                 ${product.brand ? `<div class="product-brand">${product.brand}</div>` : ''}
                 <p class="product-description">${truncateText(product.description, 80)}</p>
                 <div class="product-footer">
@@ -751,7 +832,7 @@ function createProductCard(product) {
                     <span class="product-stock ${stockClass}">${stockStatus}</span>
                 </div>
                 ${product.stock > 0 ? 
-                    `<button class="add-to-cart-btn" onclick="addToCartFromProduct(${product.id}, '${product.name}', ${product.price})">
+                    `<button class="add-to-cart-btn" onclick="addToCart('${safeNameForJs}', ${product.price})">
                         <span>Add to Cart</span>
                         <span class="cart-icon">🛒</span>
                     </button>` : 
@@ -762,10 +843,6 @@ function createProductCard(product) {
     `;
 }
 
-// Add to cart from product card
-function addToCartFromProduct(productId, name, price) {
-    addToCart(name, price);
-}
 
 // Truncate text helper
 function truncateText(text, maxLength) {
@@ -991,4 +1068,72 @@ function updateLoadMoreButton() {
 function loadMoreProducts() {
     currentPage++;
     loadProducts(true);
+}
+
+// Initialize cart from localStorage
+function initializeCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        try {
+            cart = JSON.parse(savedCart);
+            updateCart();
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            cart = {};
+        }
+    }
+}
+
+// Save cart to localStorage
+function saveCart() {
+    try {
+        localStorage.setItem('cart', JSON.stringify(cart));
+    } catch (error) {
+        console.error('Error saving cart:', error);
+    }
+}
+
+function clearCart() {
+    showConfirmDialog({
+        title: 'Clear Cart',
+        message: 'Are you sure you want to remove all items from your cart?',
+        type: 'warning',
+        confirmText: 'Clear Cart',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            cart = {};
+            showToast('Cart Cleared', 'All items removed from cart', 'success', 2000);
+            updateCart();
+            saveCart();
+        }
+    });
+}
+
+function handleCheckout() {
+    const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+    
+    if (totalItems === 0) {
+        showToast('Empty Cart', 'Please add items to your cart first', 'warning', 3000);
+        return;
+    }
+    
+    showConfirmDialog({
+        title: 'Coming Soon',
+        message: 'Checkout functionality is currently under development. This feature will be available soon!',
+        type: 'info',
+        confirmText: 'Got it',
+        cancelText: '',
+        onConfirm: () => {}
+    });
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
 }
