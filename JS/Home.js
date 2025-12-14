@@ -796,7 +796,11 @@ function createProductCard(product) {
     const formattedPrice = parseFloat(product.price).toLocaleString();
     const stockStatus = product.stock > 0 ? 'In Stock' : 'Out of Stock';
     const stockClass = product.stock > 0 ? 'in-stock' : 'out-of-stock';
+<<<<<<< HEAD
     const condition = product.condition || product.conditions || 'Good';
+=======
+    const condition = product.condition || product.conditions || 'Good'; // FIX UNDEFINED
+>>>>>>> 690f7c8 (save)
     
     // Escape product name for use in onclick
     const safeName = escapeHtml(product.name);
@@ -807,6 +811,7 @@ function createProductCard(product) {
     
     return `
         <div class="product-card" data-product-id="${product.id}">
+<<<<<<< HEAD
             <div class="product-image-container ${!hasImage ? 'no-image' : ''}">
                 ${hasImage ? 
                     `<img src="${imageUrl}" 
@@ -819,6 +824,10 @@ function createProductCard(product) {
                         <div class="placeholder-text">No Image</div>
                     </div>`
                 }
+=======
+            <div class="product-image-container">
+                <img src="${imageUrl}" alt="${safeName}" class="product-image" onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
+>>>>>>> 690f7c8 (save)
                 <div class="product-badge">${condition}</div>
                 ${product.stock <= 5 && product.stock > 0 ? '<div class="product-badge low-stock">Low Stock</div>' : ''}
             </div>

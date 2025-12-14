@@ -1733,6 +1733,7 @@ body {
     }
 }
 
+<<<<<<< HEAD
 /* Image Placeholder Styling */
 .product-image-container.no-image {
     display: flex;
@@ -1767,6 +1768,8 @@ body {
     z-index: 3;
 }
 
+=======
+>>>>>>> 690f7c8 (save)
 /* Small Mobile - Optimize (below 480px) */
 @media (max-width: 480px) {
     .header-content {
